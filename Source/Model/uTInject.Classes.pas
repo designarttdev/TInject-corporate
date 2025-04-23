@@ -1341,26 +1341,28 @@ procedure TClassPadraoList<T>.ClearArray(PArray: TArray<T>);
 var
   I: Integer;
 begin
-   try
-    for i:= Length(PArray)-1 downto 0 do
+  try
+    for I := Length(PArray) - 1 downto 0 do
+    begin
         {$IFDEF VER300}
-          freeAndNil(PArray[i]);
+      freeAndNil(PArray[I]);
         {$ENDIF}
 
-        {$IFDEF VER330}
-          freeAndNil(PArray[i]);
-        {$ENDIF}
+          {$IFDEF VER330}
+      freeAndNil(PArray[I]);
+          {$ENDIF}
 
-        {$IFDEF VER340}
-          freeAndNil(TArray<TClassPadrao>(PArray)[i]);
-        {$ENDIF}
+          {$IFDEF VER340}
+      freeAndNil(TArray<TClassPadrao>(PArray)[I]);
+          {$ENDIF}
 
-        {$IFDEF DELPHI25_UP}
-          freeAndNil(TArray<TClassPadrao>(PArray)[i]);
-        {$ENDIF}
-   finally
-     SetLength(PArray, 0);
-   end;
+          {$IFDEF DELPHI25_UP}
+      freeAndNil(TArray<TClassPadrao>(PArray)[I]);
+          {$ENDIF}
+    end;
+  finally
+    SetLength(PArray, 0);
+  end;
 end;
 
 destructor TClassPadraoList<T>.Destroy;

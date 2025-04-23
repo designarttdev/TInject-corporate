@@ -93,6 +93,7 @@ type
     FJsonString : String;
     FJsonOption : TJsonOptions;
     FName       : String;
+    FNumber     : String;
     FTypeHeader : TTypeHeader;
     FInjectWorking: Boolean;
     function DownLoadInternetFilePadrao(Source, Dest: String): Boolean;
@@ -102,6 +103,7 @@ type
     constructor Create(pAJsonString: string; PJsonOption: TJsonOptions = JsonOptionClassPadrao);
     destructor  Destroy; override;
     property Name        : String         read FName;
+    property Number      : String         read FNumber;
     Property TypeHeader  : TTypeHeader    Read FTypeHeader;
     Property JsonOption  : TJsonOptions   Read FJsonOption;
     Property JsonString  : String         Read FJsonString;
@@ -526,6 +528,16 @@ type
     property Msgs:          String           read Fmsgs               write Fmsgs;
   end;
 
+  TContactClassBlock = class(TClassPadrao)
+  private
+    FData: TList<string>;
+  public
+    constructor Create;
+    destructor Destroy; override;
+    procedure AddArray(AData: TArray<string>);
+    function GetArray: TArray<string>;
+  end;
+
   TLastReceivedKeyClass = class(TClassPadrao)
   private
     F_serialized: String;
@@ -598,6 +610,7 @@ type
     FTimestamp          :Extended;
     FContent            :String;
     FIsGroupMsg         :Boolean;
+    FIsGroupMsgType     :String;
     FIsMMS              :Boolean;
     FIsMedia            :Boolean;
     FIsNotification     :Boolean;
@@ -626,6 +639,7 @@ type
     property invis      : Boolean             read FInvis              write FInvis;
     property isForwarded: Boolean             read FIsForwarded        write FIsForwarded;
     property isGroupMsg : Boolean             read FIsGroupMsg         write FIsGroupMsg;
+    property &type      : String               read FIsGroupMsgType     write FIsGroupMsgType;
     property isMMS      : Boolean             read FIsMMS              write FIsMMS;
     property isMedia    : Boolean             read FIsMedia            write FIsMedia;
     property isNewMsg   : Boolean             read FIsNewMsg           write FIsNewMsg;
@@ -656,7 +670,6 @@ type
     property t                 :Extended      read FT                  write FT;
     property timestamp         :Extended      read FTimestamp          write FTimestamp;
     property &to               :String        read FTo                 write FTo;   //@LuizAlvez
-    property &type             :String        read FType               write FType;
     property profilePicThumb   :String        read FprofilePicThumb    write FprofilePicThumb;
     property selectedId        :String        read FselectedId         write FselectedId;
     property selectedButtonId  :String        read FselectedButtonId   write FselectedButtonId;
@@ -694,6 +707,7 @@ type
     property contact        : TContactClass               Read FContact               write FContact;
     property id             : string                      read FId                    write FId;
     property isGroup        : Boolean                     read FIsGroup               write FIsGroup;
+    //property groupMetadata  : TJSONObject                 read FIsGroupMetadata       write FIsGroupMetadata;
     property isReadOnly     : Boolean                     read FIsReadOnly            write FIsReadOnly;
     property kind           : string                      read FKind                  Write FKind;
     property KindTypeNumber : TTypeNumber                 read FKindTypeNumber;
@@ -719,17 +733,25 @@ Public
   constructor Create(pAJsonString: string);
 end;
 
+TRetornoAllContactsBlock = class(TClassPadraoList<TContactClassBlock>)
+Public
+  constructor Create(pAJsonString: string);
+end;
+
 //Mike
 //TRetornoAllGroups = class(TClassPadraoList<TContactClass>)
 //Public
 //  constructor Create(pAJsonString: string);
 //end;
 
+
 TRetornoAllGroups = class(TClassPadrao)
   private
     FNumbers: TStringList;
+    //FNumbers: TJSONObject;
   public
     property    Numbers: TStringList   read FNumbers;
+    //property    Numbers: TJSONObject  read FNumbers  write FNumbers;
     constructor Create(pAJsonString: string);
     destructor Destroy; override;
 end;
@@ -744,22 +766,17 @@ public
   destructor Destroy; override;
 end;
 
-//TRetornoAllGroups = class(TClassPadraoList<TClassGetAllGroupContacts>)
-//Public
-//  constructor Create(pAJsonString: string);
-//end;
-
 TChatList = class(TClassPadraoList<TChatClass>)
 end;
 
+TListBlockContacts = class(TClassPadraoList<TChatClass>)
+end;
 
 TChatList2 = class(TClassPadraoList<TChatClass>)
 end;
 
-
 TRetornoAllGroupContacts = class(TClassPadraoList<TChatClass>)
 end;
-
 
 TResultQRCodeClass = class(TClassPadrao)
 private
@@ -1174,7 +1191,6 @@ var
 
 begin
   try
-
    try
 
     lAJsonObj      := TJSONObject.ParseJSONValue(pAJsonString);
@@ -1540,11 +1556,6 @@ begin
   inherited Create(pAJsonString);
   FNumbers      := TStringList.create;
   FNumbers.Text := FJsonString;
-  //Quebrar linhas de acordo com cada valor separado por virgula
-  FNumbers.Text := StringReplace(FNumbers.Text, '",', Enter, [rfReplaceAll]);
-  FNumbers.Text := StringReplace(FNumbers.Text, '"' , '',    [rfReplaceAll]);
-  FNumbers.Text := StringReplace(FNumbers.Text, '{result:[' , '',    [rfReplaceAll]);
-  FNumbers.Text := StringReplace(FNumbers.Text, ']}' , '',    [rfReplaceAll]);
 end;
 
 destructor TRetornoAllGroups.Destroy;
@@ -1669,6 +1680,37 @@ begin
   end;
   {$ENDIF}
 
+end;
+
+{ TContactClassBlock }
+
+procedure TContactClassBlock.AddArray(AData: TArray<string>);
+begin
+  inherited;
+  FData.AddRange(AData);
+end;
+
+constructor TContactClassBlock.Create;
+begin
+  FData := TList<string>.Create;
+end;
+
+destructor TContactClassBlock.Destroy;
+begin
+  FData.Free;
+  inherited;
+end;
+
+function TContactClassBlock.GetArray: TArray<string>;
+begin
+  Result := FData.ToArray;
+end;
+
+{ TRetornoAllContactsBlock }
+
+constructor TRetornoAllContactsBlock.Create(pAJsonString: string);
+begin
+ inherited Create(pAJsonString);
 end;
 
 end.

@@ -16,12 +16,12 @@ uses
    System.NetEncoding, System.TypInfo,  WinInet,
 
   Vcl.StdCtrls, System.ImageList, Vcl.ImgList, Vcl.AppEvnts, Vcl.ComCtrls,
-  Vcl.Imaging.pngimage, Vcl.Buttons, Vcl.Mask, Data.DB, Vcl.DBCtrls, Vcl.Grids,
+  Vcl.Imaging.pngimage, Vcl.Buttons, Vcl.Mask, Vcl.DBCtrls, Vcl.Grids,
   Vcl.DBGrids, Vcl.Dialogs, IdBaseComponent, IdComponent, IdTCPConnection,
   IdTCPClient, Vcl.OleCtrls, SHDocVw, IdHTTP, IdIOHandler,
   IdIOHandlerSocket, IdIOHandlerStack, IdSSL, IdSSLOpenSSL, Vcl.Imaging.jpeg,
   REST.Types, REST.Client, Data.Bind.Components, Data.Bind.ObjectScope, ClipBrd,
-  Vcl.Menus;
+  Vcl.Menus, Data.DB;
 
 type
   TfrmPrincipal = class(TForm)
@@ -43,8 +43,6 @@ type
     btSendText: TButton;
     Panel1: TPanel;
     groupListaChats: TGroupBox;
-    Button3: TButton;
-    listaChats: TListView;
     groupListaContatos: TGroupBox;
     Splitter1: TSplitter;
     ed_num: TComboBox;
@@ -55,7 +53,6 @@ type
     lblStatus: TLabel;
     Lbl_Avisos: TLabel;
     Timer2: TTimer;
-    CheckBox5: TCheckBox;
     Label3: TLabel;
     Panel3: TPanel;
     LabeledEdit2: TLabeledEdit;
@@ -90,7 +87,6 @@ type
     TabSheet2: TTabSheet;
     Panel5: TPanel;
     Panel6: TPanel;
-    listaGrupos: TListView;
     GroupBox1: TGroupBox;
     Button4: TButton;
     listaParticipantes: TListView;
@@ -181,6 +177,30 @@ type
     Label20: TLabel;
     mResponse: TMemo;
     btGemini: TButton;
+    btnListarContatosBloq: TButton;
+    btBlockContact: TButton;
+    btUnBlockContact: TButton;
+    chk_MetaAI: TCheckBox;
+    Panel9: TPanel;
+    Label22: TLabel;
+    Label23: TLabel;
+    cBoxTipoPIX: TComboBox;
+    Label21: TLabel;
+    edPIXKey: TEdit;
+    Label24: TLabel;
+    edtNomeBeneficiadoPIX: TEdit;
+    Label25: TLabel;
+    btSendPIXKey: TButton;
+    Panel12: TPanel;
+    Label26: TLabel;
+    btnStartTyping: TButton;
+    listaChats: TListView;
+    Button3: TButton;
+    btnStopTyping: TButton;
+    btnSendSticker: TButton;
+    gridGroups: TDBGrid;
+    chk_ativaLeitura: TCheckBox;
+    btMarkUnRead: TButton;
     procedure FormCreate(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure btSendTextClick(Sender: TObject);
@@ -209,7 +229,6 @@ type
     procedure whatsOnClick(Sender: TObject);
     procedure TInject1LowBattery(Sender: TObject);
     procedure TInject1DisconnectedBrute(Sender: TObject);
-    procedure chk_3Click(Sender: TObject);
     procedure Button6Click(Sender: TObject);
     procedure Button4Click(Sender: TObject);
     procedure btSendContactClick(Sender: TObject);
@@ -226,7 +245,6 @@ type
     procedure Button1Click(Sender: TObject);
     procedure TInject1GetProfilePicThumb(Sender: TObject; Base64: string);
     procedure Button5Click(Sender: TObject);
-    procedure listaGruposClick(Sender: TObject);
     procedure TInject1GetAllGroupList(const AllGroups: TRetornoAllGroups);
     procedure TInject1GetAllGroupContacts(      const Contacts: TClassAllGroupContacts);
     procedure listaParticipantesClick(Sender: TObject);
@@ -259,10 +277,7 @@ type
     procedure SpeedButton10Click(Sender: TObject);
     procedure SpeedButton11Click(Sender: TObject);
     procedure Copyall1Click(Sender: TObject);
-    procedure MenuItem1Click(Sender: TObject);
-    procedure Copy1Click(Sender: TObject);
     procedure Copy2Click(Sender: TObject);
-    procedure MenuItem2Click(Sender: TObject);
     procedure MenuItem3Click(Sender: TObject);
     procedure MenuItem4Click(Sender: TObject);
     procedure MenuItem5Click(Sender: TObject);
@@ -288,15 +303,28 @@ type
     procedure Label14Click(Sender: TObject);
     procedure Label20Click(Sender: TObject);
     procedure btGeminiClick(Sender: TObject);
+    procedure btnListarContatosBloqClick(Sender: TObject);
+    procedure TInject1GetAllContactListBlock(
+      const AllContactsBlock: TRetornoAllContactsBlock);
+    procedure btBlockContactClick(Sender: TObject);
+    procedure btUnBlockContactClick(Sender: TObject);
+    procedure btSendPIXKeyClick(Sender: TObject);
+    procedure btnStartTypingClick(Sender: TObject);
+    procedure btnStopTypingClick(Sender: TObject);
+    procedure btnSendStickerClick(Sender: TObject);
+    procedure gridGroupsCellClick(Column: TColumn);
+    procedure chk_ativaLeituraClick(Sender: TObject);
+    procedure btMarkUnReadClick(Sender: TObject);
 
   private
     { Private declarations }
-    FIniciando: Boolean;
-    FStatus: Boolean;
-    FNameContact:  string;
-    FChatID: string;
-    Procedure ExecuteFilter;
-
+    FIniciando    :Boolean;
+    FStatus       :Boolean;
+    FNameContact  :string;
+    FChatID       :string;
+    FTelefone     :string;
+    procedure processaRespostaMetaAI(chatID, msg: string);
+    procedure processaPerguntaMetaIA(metaAI: string; body: string);
   public
     { Public declarations }
     mensagem  : string;
@@ -344,6 +372,12 @@ begin
   finally
     FIniciando := False;
   end;
+end;
+
+procedure TfrmPrincipal.gridGroupsCellClick(Column: TColumn);
+begin
+  if gridGroups.Columns[0].Field.asString <> '' then
+    TInject1.listGroupContacts(gridGroups.Columns[0].Field.asString);
 end;
 
 procedure TfrmPrincipal.Label14Click(Sender: TObject);
@@ -396,11 +430,11 @@ procedure TfrmPrincipal.AddGroupList(ANumber: string);
 var
   Item: TListItem;
 begin
-  Item := listaGrupos.Items.Add;
-  item.Caption := ANumber;
-  item.SubItems.Add(item.Caption+'SubItem 1');
-  item.SubItems.Add(item.Caption+'SubItem 2');
-  item.ImageIndex := 0;
+//  Item := listaGrupos.Items.Add;
+//  item.Caption := ANumber;
+//  item.SubItems.Add(item.Caption+'SubItem 1');
+//  item.SubItems.Add(item.Caption+'SubItem 2');
+//  item.ImageIndex := 0;
 end;
 
 procedure TfrmPrincipal.FormClose(Sender: TObject; var Action: TCloseAction);
@@ -446,6 +480,15 @@ begin
   begin
     ShellExecute(Handle, 'open', 'https://mensageria.hcisistemas.com.br', '', '', 1);
   end
+end;
+
+procedure TfrmPrincipal.btBlockContactClick(Sender: TObject);
+begin
+  if not TInject1.Auth then
+       Exit;
+
+    TInject1.blockContact(ed_num.Text);
+    showMessage(ed_num.Text + ' bloqueado com sucesso.');
 end;
 
 procedure TfrmPrincipal.btCheckNumberClick(Sender: TObject);
@@ -518,8 +561,7 @@ begin
 
     buttons := TJSONObject.Create;
 
-    buttons.AddPair('useTemplateButtons' , TJSONBool.Create(true));
-    buttons.AddPair('createChat' , TJSONBool.Create(true));
+    buttons.AddPair('useInteractiveMessage' , TJSONBool.Create(true));
 
     jsonArray  := TJSONArray.Create;
 
@@ -542,11 +584,14 @@ begin
     TInject1.sendImgButtons(ed_num.Text, openDialog1.FileName, buttons.ToJSON);
 
   finally
-    ed_num.SelectAll;
-    ed_num.SetFocus;
-    buttons.Free;
-  end;
+    begin
+      ed_num.SelectAll;
+      ed_num.SetFocus;
 
+      if assigned(buttons) then
+        buttons.Free;
+    end;
+  end;
 end;
 
 procedure TfrmPrincipal.btSendLinkWithPreviewClick(Sender: TObject);
@@ -573,6 +618,16 @@ begin
     ed_num.SelectAll;
     ed_num.SetFocus;
   end;
+end;
+
+procedure TfrmPrincipal.btSendPIXKeyClick(Sender: TObject);
+begin
+  if not TInject1.Auth then
+     Exit;
+
+  if ed_num.Text = '' then
+    showMessage('Informe o número do WhatsApp de destino.') else
+    TInject1.sendPIXKey(ed_num.Text, cBoxTipoPIX.Text, edPIXKey.Text, edtNomeBeneficiadoPIX.Text);
 end;
 
 procedure TfrmPrincipal.btSendTextAndFileClick(Sender: TObject);
@@ -603,8 +658,7 @@ begin
 
     buttons := TJSONObject.Create;
 
-    buttons.AddPair('useTemplateButtons' , TJSONBool.Create(false));
-    buttons.AddPair('createChat' , TJSONBool.Create(true));
+    buttons.AddPair('useInteractiveMessage' , TJSONBool.Create(true));
 
     jsonArray  := TJSONArray.Create;
 
@@ -617,19 +671,23 @@ begin
     //ID button2
     buttonType := TJSONObject.Create;
     buttonType.AddPair('id' , '2');
-    buttonType.AddPair('text' , '⚠️Comercial');
+    buttonType.AddPair('text' , '👨🏻‍💻Comercial');
     jsonArray.AddElement(buttonType);
 
     buttons.AddPair('buttons', jsonArray);
 
-    buttons.AddPair('footer' , 'Novos buttons TInject Corporate');
+    buttons.AddPair('footer' , 'Botões TInject Corporate');
 
     TInject1.sendButtons(ed_num.Text, mem_message.Text, buttons.ToJSON);
 
   finally
-    ed_num.SelectAll;
-    ed_num.SetFocus;
-    buttons.Free;
+    begin
+      ed_num.SelectAll;
+      ed_num.SetFocus;
+
+      if assigned(buttons) then
+        buttons.Free;
+    end;
   end;
 
 end;
@@ -642,53 +700,18 @@ begin
   TInject1.CheckIsConnected();
 end;
 
-
-{procedure TfrmPrincipal.btNewCheckNumberClick(Sender: TObject);
+procedure TfrmPrincipal.btMarkUnReadClick(Sender: TObject);
 begin
-
-
-
-end;
-
-
-
- Funcao nao utilizada
-function DownloadArquivo(const Origem, Destino: String): Boolean;
-const BufferSize = 1024;
-var
-  hSession, hURL: HInternet;
-  Buffer: array[1..BufferSize] of Byte;
-  BufferLen: DWORD;
-  f: File;
-  sAppName: string;
-begin
- Result   := False;
- sAppName := ExtractFileName(Application.ExeName);
- hSession := InternetOpen(PChar(sAppName),
-                INTERNET_OPEN_TYPE_PRECONFIG,
-               nil, nil, 0);
- try
-  hURL := InternetOpenURL(hSession,
-            PChar(Origem),
-            nil,0,0,0);
   try
-   AssignFile(f, Destino);
-   Rewrite(f,1);
-   repeat
-    InternetReadFile(hURL, @Buffer,
-                     SizeOf(Buffer), BufferLen);
-    BlockWrite(f, Buffer, BufferLen)
-   until BufferLen = 0;
-   CloseFile(f);
-   Result:=True;
-  finally
-   InternetCloseHandle(hURL)
-  end
- finally
-  InternetCloseHandle(hSession)
- end
-end;}
+    if not TInject1.Auth then
+       Exit;
 
+    TInject1.markUnRead(ed_num.Text);
+  finally
+    ed_num.SelectAll;
+    ed_num.SetFocus;
+  end;
+end;
 
 procedure TfrmPrincipal.Button10Click(Sender: TObject);
 begin
@@ -734,8 +757,6 @@ begin
   end;
 end;
 
-
-
 procedure TfrmPrincipal.btDeleteChatClick(Sender: TObject);
 begin
     if not TInject1.Auth then
@@ -743,8 +764,6 @@ begin
 
     TInject1.deleteConversation(ed_num.Text);
 end;
-
-
 
 procedure TfrmPrincipal.btDevToolsClick(Sender: TObject);
 var
@@ -757,41 +776,29 @@ end;
 
 procedure TfrmPrincipal.Button19Click(Sender: TObject);
 begin
-
    if not TInject1.Auth then
      Exit;
 
-  TInject1.GetGroupInviteLink(lbl_idGroup.Caption);//  '558192317066-1592044430@g.us'
-
+  TInject1.GetGroupInviteLink(gridGroups.Columns[0].field.asString);
 end;
-
-
 
 procedure TfrmPrincipal.btCleanChatClick(Sender: TObject);
 begin
-
   if not TInject1.Auth then
      Exit;
 
   TInject1.CleanALLChat(ed_num.Text);
-
 end;
-
-
 
 procedure TfrmPrincipal.btGetStatusClick(Sender: TObject);
 begin
-
   FStatus := true;
 
   if not TInject1.Auth then
      Exit;
 
   TInject1.GetStatusContact(ed_num.Text);
-
 end;
-
-
 
 procedure TfrmPrincipal.btnGetMyNumberClick(Sender: TObject);
 begin
@@ -799,6 +806,11 @@ begin
     Exit;
 
   showMessage(TInject1.MyNumber);
+end;
+
+procedure TfrmPrincipal.btnListarContatosBloqClick(Sender: TObject);
+begin
+  TInject1.getListBlockContacts;
 end;
 
 procedure TfrmPrincipal.btnPostStatusClick(Sender: TObject);
@@ -819,7 +831,29 @@ begin
 
 end;
 
+procedure TfrmPrincipal.btnSendStickerClick(Sender: TObject);
+var
+  b64: string;
+begin
+    if not TInject1.Auth then
+       Exit;
 
+    //Converta qualquer imagem para base64 e use aqui o base64 para enviar o sticker:
+    b64 :=
+      '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';
+
+    TInject1.sendSticker(ed_num.Text, b64);
+end;
 
 procedure TfrmPrincipal.btnSendSurveyClick(Sender: TObject);
 begin
@@ -827,6 +861,26 @@ begin
        Exit;
 
     TInject1.sendSurvey(edt_nomeGrupo.Text, 'Qua a melhor linguagem?', '["DELPHI", "C#", "JAVA", "PHP", "JAVASCRIPT"]');
+end;
+
+procedure TfrmPrincipal.btnStartTypingClick(Sender: TObject);
+begin
+  if not TInject1.Auth then
+     Exit;
+
+  if ed_num.Text = '' then
+    showMessage('Informe o número do WhatsApp de destino.') else
+    TInject1.sendStartTyping(ed_num.Text);
+end;
+
+procedure TfrmPrincipal.btnStopTypingClick(Sender: TObject);
+begin
+  if not TInject1.Auth then
+     Exit;
+
+  if ed_num.Text = '' then
+    showMessage('Informe o número do WhatsApp de destino.') else
+    TInject1.sendStopTyping(ed_num.Text);
 end;
 
 procedure TfrmPrincipal.btSetProfileNameClick(Sender: TObject);
@@ -862,8 +916,6 @@ begin
   TInject1.NewCheckIsValidNumber(ed_num.text);
 
 end;
-
-
 
 procedure TfrmPrincipal.Button1Click(Sender: TObject);
 var
@@ -919,6 +971,16 @@ begin
   TInject1.GetBatteryStatus;
 end;
 
+procedure TfrmPrincipal.btUnBlockContactClick(Sender: TObject);
+begin
+  if not TInject1.Auth then
+       Exit;
+
+    TInject1.unBlockContact(ed_num.Text);
+
+    showMessage(ed_num.Text + ' desbloqueado com sucesso.');
+end;
+
 procedure TfrmPrincipal.btSendTextClick(Sender: TObject);
 begin
   try
@@ -956,15 +1018,12 @@ begin
   TInject1.groupDemoteParticipant(lbl_idGroup.Caption, ed_idParticipant.text);
 end;
 
-procedure TfrmPrincipal.chk_3Click(Sender: TObject);
-begin
-  ExecuteFilter;
-end;
-
-procedure TfrmPrincipal.Copy1Click(Sender: TObject);
+procedure TfrmPrincipal.chk_ativaLeituraClick(Sender: TObject);
 begin
   try
-    Clipboard.AsText := listaGrupos.Selected.Caption;
+    if chk_ativaLeitura.Checked = true then
+      frmConsole.StartMonitor(3) else
+      frmConsole.StartMonitor(0);
   except
   end;
 end;
@@ -1006,9 +1065,6 @@ var
   I: Integer;
   Ltexto: String;
 begin
-  //Esta processando outro CHANGE
-  if not CheckBox5.Checked then
-     Exit;
 
   if ed_num.AutoComplete = False Then
      Exit;
@@ -1046,33 +1102,19 @@ end;
 
 procedure TfrmPrincipal.ed_numKeyUp(Sender: TObject; var Key: Word;
   Shift: TShiftState);
-
 begin
-
   lblContactNumber.Caption := ed_num.Text;
-
   lblContactStatus.Caption := '-';
-
 end;
-
-
 
 procedure TfrmPrincipal.ed_numSelect(Sender: TObject);
 begin
-  if not CheckBox5.Checked then
-     Exit;
-
   if (ed_num.ItemIndex >=0) and (ed_num.Items.Count > 0) then
   Begin
     ed_num.AutoComplete := False;
     ed_num.Text         := ed_num.Items.Strings[ed_num.ItemIndex];
     ed_num.AutoComplete := True;
   End;
-end;
-
-procedure TfrmPrincipal.ExecuteFilter;
-begin
-//
 end;
 
 procedure TfrmPrincipal.Edt_DDIPDRExit(Sender: TObject);
@@ -1095,8 +1137,6 @@ begin
   TInject1.AjustNumber.LengthPhone       := StrToIntDef(Edt_LengFone.text, 8);
   TInject1.AjustNumber.DDIDefault        := StrToIntDef(Edt_DDIPDR.text  , 55);
   TInject1.AjustNumber.AllowOneDigitMore := CheckBox4.Checked;
-
-  ExecuteFilter;
 
   TInject1.LanguageInject                := TLanguageInject(ComboBox1.ItemIndex);
 end;
@@ -1144,7 +1184,21 @@ begin
   end;
 
   AContact := nil;
+end;
 
+procedure TfrmPrincipal.TInject1GetAllContactListBlock(
+  const AllContactsBlock: TRetornoAllContactsBlock);
+var
+  AContactBlock: TContactClassBlock;
+begin
+  listaContatos.Clear;
+
+  for AContactBlock in AllContactsBlock.result do
+  begin
+    AddContactList(AContactBlock.Number);
+  end;
+
+  AContactBlock := nil;
 end;
 
 procedure TfrmPrincipal.TInject1GetAllGroupAdmins(
@@ -1181,13 +1235,33 @@ end;
 procedure TfrmPrincipal.TInject1GetAllGroupList(
   const AllGroups: TRetornoAllGroups);
 var
-  i: integer;
+  JSONObject: TJSONObject;
+  JSONArray: TJSONArray;
+  JSONItem: TJSONValue;
+  CDS: TClientDataSet;
 begin
-  listaGrupos.Clear;
+  CDS := TClientDataSet.Create(nil);
+  try
+    CDS.FieldDefs.Add('id', ftString, 50);
+    CDS.FieldDefs.Add('subject', ftString, 255);
+    CDS.CreateDataSet;
 
-  for i := 0 to (AllGroups.Numbers.count) - 1 do
-  begin
-    AddGroupList(allgroups.Numbers[i])
+    JSONObject := TJSONObject.ParseJSONValue(AllGroups.Numbers[0]) as TJSONObject;
+    JSONArray := JSONObject.GetValue<TJSONArray>('result');
+
+    for JSONItem in JSONArray do
+    begin
+      CDS.Append;
+      CDS.FieldByName('id').AsString := JSONItem.GetValue<string>('id');
+      CDS.FieldByName('subject').AsString := JSONItem.GetValue<string>('subject');
+      CDS.Post;
+    end;
+
+    gridGroups.DataSource := TDataSource.Create(nil);
+    gridGroups.DataSource.DataSet := CDS;
+  except
+    CDS.Free;
+    raise;
   end;
 
 end;
@@ -1455,31 +1529,31 @@ begin
     begin
       for AMessage in AChat.messages do
       begin
-        if not AChat.isGroup then //Não processa chats de grupos
+        if  AChat.groupMetadata = nil then //Não processa chats de grupos
         begin
-          if not AMessage.isGroupMsg then //Não processa mensagens de grupos
-          begin
             if not AMessage.fromMe then  //Não exibe mensages enviadas por mim
             begin
               memo_unReadMessage.Clear;
 
               //Tratando o tipo do arquivo recebido e faz o download para pasta \BIN\temp
-              case AnsiIndexStr(UpperCase(AMessage.&type), ['PTT', 'IMAGE', 'VIDEO', 'AUDIO', 'DOCUMENT']) of
+              case AnsiIndexStr(uppercase(AMessage.mimetype), ['AUDIO/OGG; CODECS=OPUS', 'IMAGE/JPEG', 'VIDEO/MP4', 'AUDIO/MPEG', 'APPLICATION/X-COMPRESSED', 'APPLICATION/PDF']) of
                 0: begin injectDecrypt.download(AMessage.deprecatedMms3Url, AMessage.mediaKey, 'mp3', AChat.id); end;
                 1: begin injectDecrypt.download(AMessage.deprecatedMms3Url, AMessage.mediaKey, 'jpg', AChat.id); end;
                 2: begin injectDecrypt.download(AMessage.deprecatedMms3Url, AMessage.mediaKey, 'mp4', AChat.id); end;
                 3: begin injectDecrypt.download(AMessage.deprecatedMms3Url, AMessage.mediaKey, 'mp3', AChat.id); end;
-                4: begin injectDecrypt.download(AMessage.deprecatedMms3Url, AMessage.mediaKey, 'pdf', AChat.id); end;
+                4: begin injectDecrypt.download(AMessage.deprecatedMms3Url, AMessage.mediaKey, 'rar', AChat.id); end;
+                5: begin injectDecrypt.download(AMessage.deprecatedMms3Url, AMessage.mediaKey, 'pdf', AChat.id); end;
               end;
 
               sleepNoFreeze(100);
 
               memo_unReadMessage.Lines.Add(PChar( 'Nome Contato: ' + Trim(AMessage.Sender.pushName)));
-                memo_unReadMessage.Lines.Add(PChar( 'Chat Id     : ' + AChat.id));
-              FChatID := AChat.id;
+              memo_unReadMessage.Lines.Add(PChar( 'Chat Id     : ' + AChat.id));
+
+              //FChatID := AChat.id;
 
               //Retorna o tipo da mensagem
-              memo_unReadMessage.Lines.Add(PChar('Tipo mensagem: '   + AMessage.&type));
+              memo_unReadMessage.Lines.Add(PChar('Tipo mensagem: '   + AMessage.mimetype));
 
               //Retorna o id do button
               memo_unReadMessage.Lines.Add(PChar('ID Button: '       + AMessage.selectedId));
@@ -1488,8 +1562,7 @@ begin
               //Retorna o corpo da mensagem
               memo_unReadMessage.Lines.Add( StringReplace(AMessage.body, #$A, #13#10, [rfReplaceAll, rfIgnoreCase]));
 
-              //Retorna o numero do whatsapp
-              telefone  :=  Copy(AChat.id, 3, Pos('@', AChat.id) - 3);
+
 
               //Retorna o nome do contato
               contato   :=  AMessage.Sender.pushName;
@@ -1500,13 +1573,38 @@ begin
               //Marca como lida a mensagem
               TInject1.ReadMessages(AChat.id);
 
+              if AChat.contact.formattedName = 'Meta AI' then
+              begin
+                processaRespostaMetaAI(FChatID, StringReplace(AMessage.body, #$A, #13#10, [rfReplaceAll, rfIgnoreCase]));
+                exit;
+              end else
+                begin
+                  FChatID := AChat.id;
+                   //Retorna o numero do whatsapp
+                  FTelefone  :=  Copy(AChat.id, 3, Pos('@', AChat.id) - 3);
+                end;
+              if chk_MetaAI.Checked then
+              begin
+                processaPerguntaMetaIA('13135550002@c.us', StringReplace(AMessage.body, #$A, #13#10, [rfReplaceAll, rfIgnoreCase]));
+                exit;
+              end;
+
               if chk_AutoResposta.Checked then
                  VerificaPalavraChave(AMessage.body, '', AChat.id, contato);
             end;
-          end;
         end;
       end;
     end;
+end;
+
+procedure TfrmPrincipal.processaPerguntaMetaIA(metaAI: string; body: string);
+begin
+  TInject1.send(metaAI, body);
+end;
+
+procedure TfrmPrincipal.processaRespostaMetaAI(chatID: string; msg: string);
+begin
+  TInject1.send(chatID, '*Meta AI diz*:\n\n'+msg);
 end;
 
 procedure TfrmPrincipal.TInject1GetWhatsappVersion(Sender: TObject);
@@ -1591,63 +1689,12 @@ begin
   lblContactNumber.Caption := ed_num.Text;
 end;
 
-procedure TfrmPrincipal.listaGruposClick(Sender: TObject);
-begin
-  if listaGrupos.ItemIndex <>  - 1 then
-  begin
-    lbl_idGroup.Caption :=  Copy(listaGrupos.Items[listaGrupos.Selected.Index].SubItems[1], 0,
-      Pos('@', listaGrupos.Items[listaGrupos.Selected.Index].SubItems[1]))+'g.us';
-
-    if not TInject1.Auth then
-      Exit;
-
-    TInject1.listGroupContacts(lbl_idGroup.Caption);
-  end;
-end;
-
 procedure TfrmPrincipal.listaParticipantesClick(Sender: TObject);
 begin
   if listaParticipantes.ItemIndex <>  - 1 then
   begin
     ed_idParticipant.text :=  Copy(listaParticipantes.Items[listaParticipantes.Selected.Index].SubItems[1], 0,
       Pos('@', listaParticipantes.Items[listaParticipantes.Selected.Index].SubItems[1]))+'c.us';
-  end;
-end;
-
-procedure TfrmPrincipal.MenuItem1Click(Sender: TObject);
-var
-  sl: TStringlist;
-  i, k: integer;
-  s: string;
-  Item: TListItem;
-begin
-
-  sl := TStringlist.Create;
-
-  try
-    for i := 0 To listaGrupos.items.count-1 Do
-    begin
-      item := listaGrupos.Items[i];
-      S   := item.Caption;
-      sl.Add( S );
-    end;
-
-    Clipboard.AsText := sl.Text;
-
-  finally
-    begin
-      sl.free;
-      application.MessageBox('All Copied', 'Message' , MB_OK + MB_ICONASTERISK);
-    end;
-  end;
-
-end;
-
-procedure TfrmPrincipal.MenuItem2Click(Sender: TObject);
-begin
-  try
-    Clipboard.AsText := listaAdministradores.Selected.Caption;
-  except
   end;
 end;
 

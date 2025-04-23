@@ -4,7 +4,7 @@ Componente para criação de chatBots com delphi<br>
 
 ## INSTRUÇÕES PARA USO DO COMPONENTE<br></br>
 
-Compatibilidade testada nas seguintes versões do Delphi: Seattle, Berlim, Tokyo, Rio, Sydney.<br></br>
+Compatibilidade testada nas seguintes versões do Delphi: Seattle, Berlim, Tokyo, Rio, Sydney, Athens.<br></br>
 
 ### Tutorial de instalação no youtube:<br>
 https://www.youtube.com/watch?v=EIxFdtenNxI&t=31s
@@ -24,18 +24,21 @@ https://youtu.be/cbWW7VNYwEo
 ### Recursos / Resources<br><br>
 ✔️  Login<br>
 ✔️  Logout<br>
-✔️  Confirmação de entrega de mensagens - Message delivery confirmation (NEW)<br>
-✔️  Enviar mensagens de texto com botão e lista - Send text message with button and list (NEW)<br>
-✔️  Enviar mensagens de texto com botões - Send text message with buttons (Não compatível com o multi device)<br>
+✔️  Confirmação de entrega de mensagens - Message delivery confirmation<br>
+✔️  Enviar mensagens de texto com botão e lista - Send text message with button and list<br>
+❌  Enviar mensagens de texto com botões - Send text message with buttons<br>
+❌  Enviar mensagens de texto e imagem com botões - Send text and imagem message with buttons<br>
 ✔️  Enviar mensagens de texto para números fora da agenda - Send text message<br>
 ✔️  Enviar mensagens para grupos - Send group messages<br>
 ✔️  Enviar contatos - Send phone contacts<br>
+✔️  Enviar chave PIX<br>
 ✔️  Enviar MP3 - Send MP3<br>
 ✔️  Enviar MP4 - Send MP4<br>
 ✔️  Enviar IMG - Send IMG<br>
 ✔️  Enviar RAR - Send RAR<br>
 ✔️  Enviar Link com prévia - Sending and preview (Não compatível com o multi device)<br>
 ✔️  Enviar localização - Location sending<br>
+✔️  Enviar Stickers - Send Stickers<br>
 ✔️  Listar contatos - Contact list<br>
 ✔️  Listar bate papos - Conversation list<br>
 ✔️  Status da bateria - Battery status (Não compatível com o multi device)<br>
@@ -67,16 +70,19 @@ https://youtu.be/cbWW7VNYwEo
 ### Events that send messages<br>
 | event           | Description                | Example                                                                              | return |
 |-----------------|----------------------------|--------------------------------------------------------------------------------------|--------|
-| send            | Send text message          | TInject1.send('55819999999@c.us', 'hello');                                          | -      |
+| send            | Send text message          | TInject1.send('55819999999@c.us', 'hello');                                          | onGetIsDelivered |
 | sendButtons     | Send text message buttons  | TInject1.sendButtons('55819999999@c.us', 'Choose', [{buttonId: 'id1', buttonText:{displayText: 'SIM'}, type: 1}, type: 1}], 'Escolha uma opção'); | -      |
-| sendFile        | Send file and text message | TInject1.SendFile('558199999999@c.us', 'c:\myFile.pdf', 'hello');                    | -      |
+| sendFile        | Send file and text message | TInject1.SendFile('558199999999@c.us', 'c:\myFile.pdf', 'hello');                    | onGetIsDelivered |
 | sendContact     | Send whatsapp contact      | TInject1.sendContact('destinationContact@c.us', 'contactToBeSent@c.us');             | -      |
 | sendLinkPreview | Send preview link          | TInject1.sendLinkPreview('558199999999@c.us', 'https://youtube.com/video', 'hello'); | -      |
-| sendLocation    | Send Location              | TInject1.sendLocation('55819999999@c.us', '-70.4078', '25.3789', 'my location');     |        |<br><br>
+| sendLocation    | Send Location              | TInject1.sendLocation('55819999999@c.us', '-70.4078', '25.3789', 'my location');     |        |
+| sendPixKey      | Send PIX Key               | TInject1.sendPixKey('55819999999@c.us', 'EMAIL or CPF or CNPJ or TELEFONE or ALEATÓRIO', 'Chave PIX', 'NAME');                    |        |
+| sendStartTyping | Send start typing          | TInject1.sendStartTyping('55819999999@c.us');                                        |        |
+| sendStopTyping  | Send stop typing           | TInject1.sendStopTyping('55819999999@c.us');                                         |        |
+| sendSticker     | Send Stickers              | TInject1.sendSticker('55819999999@c.us', 'Long base64 where...');                    |        |<br><br>
 
 ### Verifications events<br>
 | event                 | Description                                             | example                                              | event return      | return                       |
 |-----------------------|---------------------------------------------------------|------------------------------------------------------|-------------------|------------------------------|
 | CheckIsConnected      | Checks the connection between the device and whatsapp   | TInject1.CheckIsConnected();                         | OnIsConnected     | boolean                      |
 | NewCheckIsValidNumber | Checks whether one or more numbers are whatsapp numbers | TInject1.NewCheckIsValidNumber('558199999999@c.us'); | OnNewGetNumber    | TReturnCheckNumber           |
-| GetBatteryStatus      | Checks the device's battery level                       | TInject1.GetBatteryStatus;                           | OnGetBatteryLevel | TInject(Sender).BatteryLevel |
